@@ -6,12 +6,18 @@ Base.metadata.create_all(bind=engine)
 db = SessionLocal()
 
 users = [
-    User(google_id="demo-student", full_name="Maria Santos", email="maria.student@example.com", role="Student", school_id="2026-0001", is_active=True),
-    User(google_id="demo-teacher", full_name="Carlos Reyes", email="carlos.teacher@example.com", role="Teacher", school_id="T-1001", is_active=True),
+    User(google_id="demo-student", full_name="Maria Santos", email="maria.student@example.com", role="User", member_type="Student", school_id="2026-0001", is_active=True),
+    User(google_id="demo-faculty", full_name="Carlos Reyes", email="carlos.faculty@example.com", role="User", member_type="Faculty", school_id="F-1001", is_active=True),
+    User(google_id="demo-graduate", full_name="Ana Cruz", email="ana.graduate@example.com", role="User", member_type="Graduated", school_id="2022-0100", department="Information Technology", course="Bachelor of Science in Information Technology", graduation_year=2022, is_active=True),
+    User(google_id="demo-registrar", full_name="School Registrar", email="registrar@example.com", role="Registrar", school_id="R-1001", is_active=True),
     User(google_id="demo-admin", full_name="Registrar Administrator", email="registrar.admin@example.com", role="Administrator", school_id="A-1001", is_active=True),
 ]
 for user in users:
-    if not db.query(User).filter(User.email == user.email).first():
+    existing = db.query(User).filter(User.email == user.email).first()
+    if existing:
+        existing.role = user.role
+        existing.member_type = user.member_type
+    else:
         db.add(user)
 db.commit()
 

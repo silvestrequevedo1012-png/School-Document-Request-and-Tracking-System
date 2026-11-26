@@ -9,7 +9,7 @@ from ..models.document_request import DocumentRequest
 from ..models.status_history import StatusHistory
 from ..schemas.request import RequestCreate, CancelRequest
 from ..schemas.request import DOCUMENT_TYPES
-from ..utils.security import get_current_user
+from ..utils.security import REQUEST_STAFF_ROLES, get_current_user
 from ..services.request_service import change_status
 from ..services.notification_service import create_notification
 from ..services.email_service import send_request_submitted_email, send_cancelled_email
@@ -42,6 +42,8 @@ def serialize_request(db: Session, request: DocumentRequest):
 
 @router.post("")
 def create_request(payload: RequestCreate, db: Session = Depends(get_db), user: User = Depends(get_current_user)):
+    if user.role != "User":
+        raise HTTPException(403, "Only regular users can submit document requests")
     if payload.document_type not in DOCUMENT_TYPES:
         raise HTTPException(400, "Invalid document type")
     if payload.preferred_release_date and payload.preferred_release_date < date.today():
@@ -83,7 +85,7 @@ def history(
     user: User = Depends(get_current_user),
 ):
     query = db.query(DocumentRequest)
-    if user.role != "Administrator":
+    if user.role not in REQUEST_STAFF_ROLES:
         query = query.filter(DocumentRequest.user_id == user.id)
     if status != "All":
         query = query.filter(DocumentRequest.status == status)
@@ -122,7 +124,7 @@ def history(
 @router.get("")
 def list_requests(db: Session = Depends(get_db), user: User = Depends(get_current_user)):
     query = db.query(DocumentRequest)
-    if user.role != "Administrator":
+    if user.role not in REQUEST_STAFF_ROLES:
         query = query.filter(DocumentRequest.user_id == user.id)
     return [serialize_request(db, item) for item in query.order_by(DocumentRequest.submitted_at.desc()).all()]
 
@@ -132,7 +134,7 @@ def request_detail(request_id: str, db: Session = Depends(get_db), user: User = 
     request = db.query(DocumentRequest).filter(DocumentRequest.request_id == request_id.upper()).first()
     if not request:
         raise HTTPException(404, "Request not found")
-    if user.role != "Administrator" and request.user_id != user.id:
+    if user.role not in REQUEST_STAFF_ROLES and request.user_id != user.id:
         raise HTTPException(403, "You cannot view another user's request")
     history = db.query(StatusHistory).filter(StatusHistory.request_id == request.id).order_by(StatusHistory.changed_at.asc()).all()
     result = serialize_request(db, request)
@@ -145,9 +147,9 @@ def cancel_request(request_id: str, payload: CancelRequest, db: Session = Depend
     request = db.query(DocumentRequest).filter(DocumentRequest.request_id == request_id.upper()).first()
     if not request:
         raise HTTPException(404, "Request not found")
-    if user.role != "Administrator" and request.user_id != user.id:
+    if user.role not in REQUEST_STAFF_ROLES and request.user_id != user.id:
         raise HTTPException(403, "You cannot cancel another user's request")
-    if user.role != "Administrator" and request.status not in {"Pending", "On Hold"}:
+    if user.role not in REQUEST_STAFF_ROLES and request.status not in {"Pending", "On Hold"}:
         raise HTTPException(400, "This request can no longer be cancelled")
     change_status(db, request, "Cancelled", user.id, payload.reason)
     request.cancelled_at = datetime.now(timezone.utc)

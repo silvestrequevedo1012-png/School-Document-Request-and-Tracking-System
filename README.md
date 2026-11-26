@@ -38,6 +38,10 @@ Open `http://localhost:5173`. API documentation is available at `http://localhos
 
 Create a Google OAuth web credential, enable the Google OAuth/OpenID scopes, and add `http://localhost:8000/api/auth/google/callback` as an authorized redirect URI.
 
+## User roles
+
+The system has three roles: **Administrator** (full access, including account role management), **Registrar** (request workflow only), and **User** (submits and tracks personal document requests). User affiliation is separate from system role and may be **Student**, **Faculty**, or **Graduated**. New accounts are regular users by default.
+
 ## Email delivery
 
 Configure both providers in `.env` for failover. Mailjet uses `in-v3.mailjet.com:587`, your Mailjet API key as `MAILJET_SMTP_USERNAME`, and its secret key as `MAILJET_SMTP_PASSWORD`. Set `MAILJET_FROM_EMAIL` to a sender verified in Mailjet. Brevo uses `smtp-relay.brevo.com:587`, its SMTP login and SMTP key, and `BREVO_FROM_EMAIL` as a sender verified in Brevo. Gmail SMTP is not used.

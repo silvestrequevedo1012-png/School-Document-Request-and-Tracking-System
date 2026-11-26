@@ -81,7 +81,7 @@ def exchange_google_code(code: str, db: Session) -> User:
             full_name=profile.get("name") or email.split("@")[0],
             email=email,
             profile_picture=profile.get("picture"),
-            role="Student",
+            role="User",
             last_login=datetime.now(timezone.utc),
         )
         db.add(user)

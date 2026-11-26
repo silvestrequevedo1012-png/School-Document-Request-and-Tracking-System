@@ -10,8 +10,9 @@ from ..models.document_request import DocumentRequest
 from ..models.audit_log import AuditLog
 from ..models.email_log import EmailLog
 from ..schemas.request import RejectRequest, ReleaseDateUpdate
-from ..schemas.admin import TestEmailRequest
-from ..utils.security import require_admin
+from ..schemas.admin import TestEmailRequest, UserRoleUpdate
+from ..schemas.user import UserResponse
+from ..utils.security import require_admin, require_request_staff
 from ..services.request_service import change_status
 from ..services.notification_service import create_notification
 from ..services.email_service import (
@@ -53,7 +54,7 @@ def get_request(db, request_id):
 
 @router.get("/requests")
 def admin_requests(status: str = "All", document: str = "All", search: str = "", page: int = 1, page_size: int = 10,
-                   db: Session = Depends(get_db), admin: User = Depends(require_admin)):
+                   db: Session = Depends(get_db), admin: User = Depends(require_request_staff)):
     query = db.query(DocumentRequest)
     if status != "All":
         query = query.filter(DocumentRequest.status == status)
@@ -68,7 +69,7 @@ def admin_requests(status: str = "All", document: str = "All", search: str = "",
 
 
 @router.get("/dashboard")
-def dashboard(db: Session = Depends(get_db), admin: User = Depends(require_admin)):
+def dashboard(db: Session = Depends(get_db), admin: User = Depends(require_request_staff)):
     statuses = ["Pending", "Processing", "On Hold", "Ready for Claim", "Released", "Cancelled", "Rejected"]
     counts = {name: db.query(DocumentRequest).filter(DocumentRequest.status == name).count() for name in statuses}
     counts["total"] = db.query(DocumentRequest).count()
@@ -80,7 +81,7 @@ def dashboard(db: Session = Depends(get_db), admin: User = Depends(require_admin
 
 
 @router.post("/requests/{request_id}/process")
-def process_request(request_id: str = None, db: Session = Depends(get_db), admin: User = Depends(require_admin)):
+def process_request(request_id: str = None, db: Session = Depends(get_db), admin: User = Depends(require_request_staff)):
     if request_id is None:
         item = db.query(DocumentRequest).filter(DocumentRequest.status == "Pending").order_by(DocumentRequest.submitted_at.asc()).first()
     else:
@@ -97,14 +98,14 @@ def process_request(request_id: str = None, db: Session = Depends(get_db), admin
 
 
 @router.post("/requests/process-next")
-def process_next(db: Session = Depends(get_db), admin: User = Depends(require_admin)):
+def process_next(db: Session = Depends(get_db), admin: User = Depends(require_request_staff)):
     return process_request(db=db, admin=admin)
 
 
 @router.post("/requests/{request_id}/hold")
-def hold_request(request_id: str, db: Session = Depends(get_db), admin: User = Depends(require_admin)):
+def hold_request(request_id: str, db: Session = Depends(get_db), admin: User = Depends(require_request_staff)):
     item = get_request(db, request_id)
-    change_status(db, item, "On Hold", admin.id, "Administrator placed request on hold")
+    change_status(db, item, "On Hold", admin.id, "Registrar placed request on hold")
     create_notification(db, item.user_id, item.id, "Request on hold", f"{item.request_id} has been placed on hold.")
     audit(db, admin, item, "HOLD_REQUEST", "Changed status to On Hold")
     db.commit()
@@ -113,9 +114,9 @@ def hold_request(request_id: str, db: Session = Depends(get_db), admin: User = D
 
 
 @router.post("/requests/{request_id}/resume")
-def resume_request(request_id: str, db: Session = Depends(get_db), admin: User = Depends(require_admin)):
+def resume_request(request_id: str, db: Session = Depends(get_db), admin: User = Depends(require_request_staff)):
     item = get_request(db, request_id)
-    change_status(db, item, "Processing", admin.id, "Administrator resumed processing")
+    change_status(db, item, "Processing", admin.id, "Registrar resumed processing")
     create_notification(db, item.user_id, item.id, "Request resumed", f"{item.request_id} returned to processing.")
     audit(db, admin, item, "RESUME_REQUEST", "Changed status back to Processing")
     db.commit()
@@ -124,7 +125,7 @@ def resume_request(request_id: str, db: Session = Depends(get_db), admin: User =
 
 
 @router.post("/requests/{request_id}/reject")
-def reject_request(request_id: str, payload: RejectRequest, db: Session = Depends(get_db), admin: User = Depends(require_admin)):
+def reject_request(request_id: str, payload: RejectRequest, db: Session = Depends(get_db), admin: User = Depends(require_request_staff)):
     item = get_request(db, request_id)
     change_status(db, item, "Rejected", admin.id, payload.reason)
     item.rejected_at = datetime.now(timezone.utc)
@@ -138,7 +139,7 @@ def reject_request(request_id: str, payload: RejectRequest, db: Session = Depend
 
 
 @router.post("/requests/{request_id}/cancel")
-def admin_cancel(request_id: str, payload: RejectRequest, db: Session = Depends(get_db), admin: User = Depends(require_admin)):
+def admin_cancel(request_id: str, payload: RejectRequest, db: Session = Depends(get_db), admin: User = Depends(require_request_staff)):
     item = get_request(db, request_id)
     change_status(db, item, "Cancelled", admin.id, payload.reason)
     item.cancelled_at = datetime.now(timezone.utc)
@@ -152,7 +153,7 @@ def admin_cancel(request_id: str, payload: RejectRequest, db: Session = Depends(
 
 
 @router.patch("/requests/{request_id}/release-date")
-def set_release_date(request_id: str, payload: ReleaseDateUpdate, db: Session = Depends(get_db), admin: User = Depends(require_admin)):
+def set_release_date(request_id: str, payload: ReleaseDateUpdate, db: Session = Depends(get_db), admin: User = Depends(require_request_staff)):
     item = get_request(db, request_id)
     if payload.release_date < date.today():
         raise HTTPException(400, "Release date cannot be in the past")
@@ -166,7 +167,7 @@ def set_release_date(request_id: str, payload: ReleaseDateUpdate, db: Session = 
 
 
 @router.post("/requests/{request_id}/ready")
-def ready_request(request_id: str, db: Session = Depends(get_db), admin: User = Depends(require_admin)):
+def ready_request(request_id: str, db: Session = Depends(get_db), admin: User = Depends(require_request_staff)):
     item = get_request(db, request_id)
     if not item.release_date:
         raise HTTPException(400, "A document release date is required before marking Ready for Claim")
@@ -179,7 +180,7 @@ def ready_request(request_id: str, db: Session = Depends(get_db), admin: User = 
 
 
 @router.post("/requests/{request_id}/release")
-def release_request(request_id: str, db: Session = Depends(get_db), admin: User = Depends(require_admin)):
+def release_request(request_id: str, db: Session = Depends(get_db), admin: User = Depends(require_request_staff)):
     item = get_request(db, request_id)
     change_status(db, item, "Released", admin.id)
     item.released_at = datetime.now(timezone.utc)
@@ -198,6 +199,30 @@ def users(search: str = "", role: str = "All", db: Session = Depends(get_db), ad
     if role != "All":
         query = query.filter(User.role == role)
     return query.order_by(User.created_at.desc()).all()
+
+
+@router.patch("/users/{user_id}/role", response_model=UserResponse)
+def update_user_role(
+    user_id: int,
+    payload: UserRoleUpdate,
+    db: Session = Depends(get_db),
+    admin: User = Depends(require_admin),
+):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(404, "User not found")
+    if user.id == admin.id and payload.role != admin.role:
+        raise HTTPException(400, "You cannot change your own role")
+    if user.role == "Administrator" and payload.role != "Administrator":
+        active_admins = db.query(User).filter(User.role == "Administrator", User.is_active.is_(True)).count()
+        if active_admins <= 1:
+            raise HTTPException(400, "The last active administrator cannot be demoted")
+    previous_role = user.role
+    user.role = payload.role
+    audit(db, admin, None, "UPDATE_USER_ROLE", f"Changed {user.email} role from {previous_role} to {payload.role}")
+    db.commit()
+    db.refresh(user)
+    return user
 
 
 @router.get("/audit-logs")

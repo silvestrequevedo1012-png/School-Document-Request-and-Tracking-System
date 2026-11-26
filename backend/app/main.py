@@ -25,6 +25,14 @@ if "users" in inspect(engine).get_table_names():
         for column, sql_type in missing_user_columns.items():
             if column not in existing_user_columns:
                 connection.execute(text(f"ALTER TABLE users ADD COLUMN {column} {sql_type}"))
+        connection.execute(
+            text(
+                "UPDATE users SET member_type = COALESCE(member_type, CASE role "
+                "WHEN 'Student' THEN 'Student' WHEN 'Teacher' THEN 'Faculty' "
+                "WHEN 'Faculty' THEN 'Faculty' WHEN 'Graduated' THEN 'Graduated' END), "
+                "role = 'User' WHERE role IN ('Student', 'Teacher', 'Faculty', 'Graduated')"
+            )
+        )
 
 app = FastAPI(
     title="School Document Request and Status Tracking System",

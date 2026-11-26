@@ -14,7 +14,7 @@ class User(Base):
     full_name = Column(String, nullable=False)
     email = Column(String, unique=True, nullable=False, index=True)
     profile_picture = Column(String)
-    role = Column(String, nullable=False, default="Student")
+    role = Column(String, nullable=False, default="User")
     school_id = Column(String)
     address = Column(Text)
     age = Column(Integer)
@@ -32,6 +32,8 @@ class User(Base):
 
     @property
     def profile_complete(self):
+        if self.role != "User":
+            return True
         if not (self.email or "").lower().endswith("@gmail.com"):
             return True
         required = (self.full_name, self.address, self.age, self.contact_number,

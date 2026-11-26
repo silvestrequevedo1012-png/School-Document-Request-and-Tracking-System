@@ -14,6 +14,7 @@ from ..database import get_db
 from ..models.user import User
 
 bearer = HTTPBearer(auto_error=False)
+REQUEST_STAFF_ROLES = {"Administrator", "Registrar"}
 
 
 def hash_password(password: str) -> str:
@@ -64,4 +65,10 @@ def get_current_user(user: User = Depends(get_authenticated_user)) -> User:
 def require_admin(user: User = Depends(get_current_user)) -> User:
     if user.role != "Administrator":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Administrator access required")
+    return user
+
+
+def require_request_staff(user: User = Depends(get_current_user)) -> User:
+    if user.role not in REQUEST_STAFF_ROLES:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Registrar or Administrator access required")
     return user

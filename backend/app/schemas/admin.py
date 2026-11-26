@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Optional
+from typing import Literal, Optional
 from pydantic import BaseModel
 
 
@@ -31,3 +31,7 @@ class EmailLogResponse(BaseModel):
 
 class TestEmailRequest(BaseModel):
     email: str
+
+
+class UserRoleUpdate(BaseModel):
+    role: Literal["User", "Registrar", "Administrator"]

@@ -24,7 +24,7 @@ def register(payload: RegisterRequest, db: Session = Depends(get_db)):
         full_name=payload.full_name.strip(),
         email=email,
         password_hash=hash_password(payload.password),
-        role="Student",
+        role="User",
         last_login=datetime.now(timezone.utc),
     )
     db.add(user)
@@ -70,6 +70,8 @@ def me(user: User = Depends(get_authenticated_user)):
 
 @router.patch("/me/profile", response_model=UserResponse)
 def complete_profile(payload: ProfileCompletionRequest, db: Session = Depends(get_db), user: User = Depends(get_authenticated_user)):
+    if user.role != "User":
+        raise HTTPException(status_code=403, detail="Only regular users can complete this profile")
     if not (user.email or "").lower().endswith("@gmail.com"):
         raise HTTPException(status_code=403, detail="Profile completion is only required for personal Gmail accounts")
     user.full_name = payload.full_name

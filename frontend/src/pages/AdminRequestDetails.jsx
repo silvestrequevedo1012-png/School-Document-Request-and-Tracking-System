@@ -22,7 +22,7 @@ export default function AdminRequestDetails() {
     } catch (err) { alert(err.response?.data?.detail || 'Action failed') }
   }
   if (!request) return <LoadingSpinner />
-  return <><div className="page-heading"><div><p className="eyebrow">Administration</p><h1>{request.request_id}</h1></div><StatusBadge status={request.status} /></div><div className="details-grid"><section className="panel"><dl><dt>Requester</dt><dd>{request.requester_name}</dd><dt>Document</dt><dd>{request.document_type}</dd><dt>Purpose</dt><dd>{request.purpose}</dd><dt>Copies</dt><dd>{request.number_of_copies}</dd><dt>Release Date</dt><dd>{request.release_date || 'Not set'}</dd></dl><div className="action-grid">
+  return <><div className="page-heading"><div><p className="eyebrow">Request Management</p><h1>{request.request_id}</h1></div><StatusBadge status={request.status} /></div><div className="details-grid"><section className="panel"><dl><dt>Requester</dt><dd>{request.requester_name}</dd><dt>Document</dt><dd>{request.document_type}</dd><dt>Purpose</dt><dd>{request.purpose}</dd><dt>Copies</dt><dd>{request.number_of_copies}</dd><dt>Release Date</dt><dd>{request.release_date || 'Not set'}</dd></dl><div className="action-grid">
     {request.status === 'Pending' && <button className="primary-button" onClick={() => action({ method:'post', url:()=>`/api/admin/requests/${requestId}/process` })}>Process</button>}
     {request.status === 'Processing' && <button className="secondary-button" onClick={() => action({ method:'post', url:()=>`/api/admin/requests/${requestId}/hold` })}>Hold</button>}
     {request.status === 'On Hold' && <button className="primary-button" onClick={() => action({ method:'post', url:()=>`/api/admin/requests/${requestId}/resume` })}>Resume</button>}
@@ -35,6 +35,6 @@ export default function AdminRequestDetails() {
   <RejectModal open={modal === 'reject'} onClose={() => setModal('')} onConfirm={reason => action({ method:'post', url:()=>`/api/admin/requests/${requestId}/reject`, body:{reason} })} />
   <ReleaseDateModal open={modal === 'date'} value={request.release_date || ''} onClose={() => setModal('')} onConfirm={release_date => action({ method:'patch', url:()=>`/api/admin/requests/${requestId}/release-date`, body:{release_date} })} />
   <ConfirmModal open={modal === 'release'} title="Release Document" message="Mark this document as released?" confirmLabel="Release" onClose={() => setModal('')} onConfirm={() => action({ method:'post', url:()=>`/api/admin/requests/${requestId}/release` })} />
-  <ConfirmModal open={modal === 'cancel'} title="Cancel Request" message="Cancel this request?" confirmLabel="Cancel" onClose={() => setModal('')} onConfirm={() => action({ method:'post', url:()=>`/api/admin/requests/${requestId}/cancel`, body:{reason:'Cancelled by administrator'} })} />
+  <ConfirmModal open={modal === 'cancel'} title="Cancel Request" message="Cancel this request?" confirmLabel="Cancel" onClose={() => setModal('')} onConfirm={() => action({ method:'post', url:()=>`/api/admin/requests/${requestId}/cancel`, body:{reason:'Cancelled by request staff'} })} />
   </>
 }

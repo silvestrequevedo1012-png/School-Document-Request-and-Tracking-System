@@ -67,13 +67,13 @@ export default function Login() {
 
           {error && <div className="alert error" role="alert">{error}</div>}
           <form className="login-form login-split-form" onSubmit={handleSubmit}>
-            {mode === 'register' && <label>Full name<input autoComplete="name" required minLength="2" maxLength="120" value={fullName} onChange={e => setFullName(e.target.value)} /></label>}
-            <label>Email address<input type="email" autoComplete="email" required maxLength="254" value={email} onChange={e => setEmail(e.target.value)} /></label>
-            <label>Password<input type="password" autoComplete={mode === 'register' ? 'new-password' : 'current-password'} required minLength={mode === 'register' ? 8 : 1} maxLength="128" value={password} onChange={e => setPassword(e.target.value)} />{mode === 'register' && <small>Use at least 8 characters.</small>}</label>
+            {mode === 'register' && <label>Full name<input autoComplete="name" placeholder="Your full name" required minLength="2" maxLength="120" value={fullName} onChange={e => setFullName(e.target.value)} /></label>}
+            <label>Email address<input type="email" autoComplete="email" placeholder="name@example.com" required maxLength="254" value={email} onChange={e => setEmail(e.target.value)} /></label>
+            <label>Password<input type="password" autoComplete={mode === 'register' ? 'new-password' : 'current-password'} placeholder={mode === 'register' ? 'Create a password' : 'Enter your password'} required minLength={mode === 'register' ? 8 : 1} maxLength="128" value={password} onChange={e => setPassword(e.target.value)} />{mode === 'register' && <small>Use at least 8 characters.</small>}</label>
             <button className="primary-button login-submit" type="submit" disabled={submitting}>{submitting ? 'Please wait…' : mode === 'register' ? 'Create account' : 'Sign in with email'}</button>
           </form>
           <div className="login-divider"><span>or continue with</span></div>
-          <a className="google-button" href={`${apiUrl}/api/auth/google`}><span className="google-g">G</span> Continue with Google</a>
+          <a className="google-button" href={`${apiUrl}/api/auth/google`}><svg className="google-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.2-2.27H12v4.3h6.44a5.5 5.5 0 0 1-2.39 3.61v2.96h3.87c2.27-2.09 3.57-5.16 3.57-8.6Z"/><path fill="#34A853" d="M12 24c3.24 0 5.96-1.08 7.95-2.93l-3.87-2.96c-1.08.73-2.46 1.16-4.08 1.16-3.14 0-5.8-2.12-6.75-4.96H1.25v3.05A12 12 0 0 0 12 24Z"/><path fill="#FBBC05" d="M5.25 14.31a7.2 7.2 0 0 1 0-4.62V6.64H1.25a12 12 0 0 0 0 10.72l4-3.05Z"/><path fill="#EA4335" d="M12 4.73c1.76 0 3.34.6 4.59 1.8l3.44-3.44C17.95 1.14 15.24 0 12 0A12 12 0 0 0 1.25 6.64l4 3.05C6.2 6.85 8.86 4.73 12 4.73Z"/></svg> Continue with Google</a>
         </div>
       </section>
     </section>
