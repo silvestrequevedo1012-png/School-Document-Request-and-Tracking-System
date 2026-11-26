@@ -46,12 +46,18 @@ def decode_access_token(token: str) -> int:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired authentication token") from exc
 
 
-def get_current_user(credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer), db: Session = Depends(get_db)) -> User:
+def get_authenticated_user(credentials: Optional[HTTPAuthorizationCredentials] = Depends(bearer), db: Session = Depends(get_db)) -> User:
     if credentials is None:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authentication required")
     user = db.query(User).filter(User.id == decode_access_token(credentials.credentials), User.is_active == True).first()
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Inactive or unknown user")
+    return user
+
+
+def get_current_user(user: User = Depends(get_authenticated_user)) -> User:
+    if not user.profile_complete:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Complete your profile before using the system")
     return user
 
 

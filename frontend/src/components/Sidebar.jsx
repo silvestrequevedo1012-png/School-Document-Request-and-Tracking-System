@@ -4,17 +4,18 @@ import { useAuth } from '../context/AuthContext'
 export default function Sidebar() {
   const { user } = useAuth()
   const base = [
-    ['/dashboard', 'Dashboard'], ['/requests', 'Request History'], ['/requests/new', 'New Request'],
-    ['/notifications', 'Notifications'], ['/profile', 'Profile']
+    ['/dashboard', 'Dashboard', 'OV'], ['/requests', 'Requests', 'RQ'], ['/requests/new', 'New Request', '+'],
+    ['/notifications', 'Notifications', 'NT'], ['/profile', 'Profile', 'ME']
   ]
   const admin = [
-    ['/admin', 'Admin Dashboard'], ['/admin/requests', 'Manage Requests'], ['/admin/users', 'Users'],
-    ['/admin/email', 'Email Logs'], ['/admin/audit-logs', 'Audit Logs'], ['/admin/dsa', 'DSA Demo']
+    ['/admin', 'Overview', 'AD'], ['/admin/requests', 'Manage Requests', 'RQ'], ['/admin/users', 'Users', 'US'],
+    ['/admin/email', 'Email Logs', 'EM'], ['/admin/audit-logs', 'Audit Logs', 'AU'], ['/admin/dsa', 'DSA Demo', 'DS']
   ]
   return (
     <aside className="sidebar">
-      {base.map(([path, label]) => <NavLink key={path} to={path}>{label}</NavLink>)}
-      {user?.role === 'Administrator' && <><div className="sidebar-label">Administration</div>{admin.map(([path, label]) => <NavLink key={path} to={path}>{label}</NavLink>)}</>}
+      <div className="sidebar-section-label">Workspace</div>
+      {base.map(([path, label, icon]) => <NavLink key={path} to={path}><span className="sidebar-icon">{icon}</span><span>{label}</span></NavLink>)}
+      {user?.role === 'Administrator' && <><div className="sidebar-label">Administration</div>{admin.map(([path, label, icon]) => <NavLink key={path} to={path}><span className="sidebar-icon">{icon}</span><span>{label}</span></NavLink>)}</>}
     </aside>
   )
 }

@@ -61,16 +61,18 @@ def exchange_google_code(code: str, db: Session) -> User:
     email = profile.get("email", "").lower()
     if not google_id or not email:
         raise HTTPException(400, "Google account did not provide required profile information")
-    if settings.google_allowed_domain:
+    is_personal_gmail = email.endswith("@gmail.com")
+    if settings.google_allowed_domain and not (is_personal_gmail and settings.google_allow_personal_gmail):
         allowed = [item.strip().lower() for item in settings.google_allowed_domain.split(",") if item.strip()]
         if not email.endswith(tuple("." + domain if not domain.startswith(".") else domain for domain in allowed)):
             raise HTTPException(403, "Your Google account domain is not allowed")
-    if email.endswith("@gmail.com") and not settings.google_allow_personal_gmail:
+    if is_personal_gmail and not settings.google_allow_personal_gmail:
         raise HTTPException(403, "Personal Gmail accounts are not allowed")
     user = db.query(User).filter((User.google_id == google_id) | (User.email == email)).first()
     if user:
         user.google_id = google_id
-        user.full_name = profile.get("name") or user.full_name
+        if not email.endswith("@gmail.com"):
+            user.full_name = profile.get("name") or user.full_name
         user.profile_picture = profile.get("picture") or user.profile_picture
         user.last_login = datetime.now(timezone.utc)
     else:

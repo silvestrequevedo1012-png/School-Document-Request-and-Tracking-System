@@ -21,8 +21,13 @@ export function AuthProvider({ children }) {
 
   const loginWithToken = (token) => {
     localStorage.setItem('token', token)
-    return api.get('/api/auth/me').then(({ data }) => setUser(data))
+    return api.get('/api/auth/me').then(({ data }) => {
+      setUser(data)
+      return data
+    })
   }
+
+  const updateUser = (profile) => setUser(profile)
 
   const logout = () => {
     api.post('/api/auth/logout').catch(() => {})
@@ -30,7 +35,7 @@ export function AuthProvider({ children }) {
     setUser(null)
   }
 
-  return <AuthContext.Provider value={{ user, loading, loginWithToken, logout }}>{children}</AuthContext.Provider>
+  return <AuthContext.Provider value={{ user, loading, loginWithToken, updateUser, logout }}>{children}</AuthContext.Provider>
 }
 
 export const useAuth = () => useContext(AuthContext)

@@ -11,6 +11,14 @@ class UserResponse(BaseModel):
     profile_picture: Optional[str] = None
     role: str
     school_id: Optional[str] = None
+    address: Optional[str] = None
+    age: Optional[int] = None
+    contact_number: Optional[str] = None
+    department: Optional[str] = None
+    course: Optional[str] = None
+    member_type: Optional[str] = None
+    graduation_year: Optional[int] = None
+    profile_complete: bool
     is_active: bool
     created_at: datetime
     updated_at: datetime

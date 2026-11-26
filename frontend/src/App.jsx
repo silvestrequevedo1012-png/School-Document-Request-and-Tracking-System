@@ -3,6 +3,7 @@ import Navbar from './components/Navbar'
 import Sidebar from './components/Sidebar'
 import ProtectedRoute from './components/ProtectedRoute'
 import Login from './pages/Login'
+import CompleteProfile from './pages/CompleteProfile'
 import Dashboard from './pages/Dashboard'
 import NewRequest from './pages/NewRequest'
 import RequestHistory from './pages/RequestHistory'
@@ -22,9 +23,10 @@ function AppShell({ children }) {
 }
 
 export default function App() {
-  const protectedPage = (page, admin = false) => <ProtectedRoute admin={admin}><AppShell>{page}</AppShell></ProtectedRoute>
+  const protectedPage = (page, admin = false, allowIncompleteProfile = false) => <ProtectedRoute admin={admin} allowIncompleteProfile={allowIncompleteProfile}><AppShell>{page}</AppShell></ProtectedRoute>
   return <Routes>
     <Route path="/login" element={<Login />} />
+    <Route path="/complete-profile" element={protectedPage(<CompleteProfile />, false, true)} />
     <Route path="/dashboard" element={protectedPage(<Dashboard />)} />
     <Route path="/requests" element={protectedPage(<RequestHistory />)} />
     <Route path="/requests/new" element={protectedPage(<NewRequest />)} />

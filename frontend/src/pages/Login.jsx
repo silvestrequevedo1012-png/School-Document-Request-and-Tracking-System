@@ -17,7 +17,7 @@ export default function Login() {
 
   useEffect(() => {
     const token = new URLSearchParams(location.search).get('token')
-    if (token) loginWithToken(token).then(() => navigate('/dashboard')).catch(() => setError('Google sign-in failed. Please try again.'))
+    if (token) loginWithToken(token).then(authenticated => navigate(authenticated.profile_complete ? '/dashboard' : '/complete-profile', { replace: true })).catch(() => setError('Google sign-in failed. Please try again.'))
   }, [location.search])
   useEffect(() => { if (user) navigate('/dashboard') }, [user])
 
@@ -29,8 +29,8 @@ export default function Login() {
       const endpoint = mode === 'register' ? '/api/auth/register' : '/api/auth/login'
       const payload = mode === 'register' ? { full_name: fullName, email, password } : { email, password }
       const { data } = await api.post(endpoint, payload)
-      await loginWithToken(data.access_token)
-      navigate('/dashboard')
+      const authenticated = await loginWithToken(data.access_token)
+      navigate(authenticated.profile_complete ? '/dashboard' : '/complete-profile')
     } catch (err) {
       const detail = err.response?.data?.detail
       setError(Array.isArray(detail) ? detail.map(item => item.msg).join(' ') : detail || 'Could not connect. Please try again.')

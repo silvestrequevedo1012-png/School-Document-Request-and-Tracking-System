@@ -8,8 +8,9 @@ from ..config import settings
 from ..database import get_db
 from ..models.user import User
 from ..services.auth_service import exchange_google_code, google_authorization_url
-from ..schemas.auth import LoginRequest, RegisterRequest, TokenResponse
-from ..utils.security import create_access_token, get_current_user, hash_password, verify_password
+from ..schemas.auth import LoginRequest, ProfileCompletionRequest, RegisterRequest, TokenResponse
+from ..schemas.user import UserResponse
+from ..utils.security import create_access_token, get_authenticated_user, hash_password, verify_password
 
 router = APIRouter(prefix="/api/auth", tags=["Authentication"])
 
@@ -57,8 +58,26 @@ def google_callback(code: str = Query(...), db: Session = Depends(get_db)):
     return RedirectResponse(f"{settings.frontend_url}/login?token={token}")
 
 
-@router.get("/me")
-def me(user: User = Depends(get_current_user)):
+@router.get("/me", response_model=UserResponse)
+def me(user: User = Depends(get_authenticated_user)):
+    return user
+
+
+@router.patch("/me/profile", response_model=UserResponse)
+def complete_profile(payload: ProfileCompletionRequest, db: Session = Depends(get_db), user: User = Depends(get_authenticated_user)):
+    if not (user.email or "").lower().endswith("@gmail.com"):
+        raise HTTPException(status_code=403, detail="Profile completion is only required for personal Gmail accounts")
+    user.full_name = payload.full_name
+    user.address = payload.address
+    user.age = payload.age
+    user.contact_number = payload.contact_number
+    user.school_id = payload.school_id
+    user.department = payload.department
+    user.course = payload.course if payload.member_type != "Faculty" else None
+    user.member_type = payload.member_type
+    user.graduation_year = payload.graduation_year
+    db.commit()
+    db.refresh(user)
     return user
 
 

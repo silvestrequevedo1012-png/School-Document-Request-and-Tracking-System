@@ -9,11 +9,22 @@ from . import models
 from .routers import auth, requests, notifications, admin
 
 Base.metadata.create_all(bind=engine)
-if "users" in inspect(engine).get_table_names() and "password_hash" not in {
-    column["name"] for column in inspect(engine).get_columns("users")
-}:
+if "users" in inspect(engine).get_table_names():
+    existing_user_columns = {column["name"] for column in inspect(engine).get_columns("users")}
+    missing_user_columns = {
+        "password_hash": "VARCHAR",
+        "address": "TEXT",
+        "age": "INTEGER",
+        "contact_number": "VARCHAR(30)",
+        "department": "VARCHAR(120)",
+        "course": "VARCHAR(120)",
+        "member_type": "VARCHAR(20)",
+        "graduation_year": "INTEGER",
+    }
     with engine.begin() as connection:
-        connection.execute(text("ALTER TABLE users ADD COLUMN password_hash VARCHAR"))
+        for column, sql_type in missing_user_columns.items():
+            if column not in existing_user_columns:
+                connection.execute(text(f"ALTER TABLE users ADD COLUMN {column} {sql_type}"))
 
 app = FastAPI(
     title="School Document Request and Status Tracking System",

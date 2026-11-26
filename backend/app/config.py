@@ -10,7 +10,7 @@ class Settings(BaseSettings):
     google_client_secret: str = ""
     google_redirect_uri: str = "http://localhost:8000/api/auth/google/callback"
     google_allowed_domain: str = ""
-    google_allow_personal_gmail: bool = False
+    google_allow_personal_gmail: bool = True
     brevo_smtp_host: str = "smtp-relay.brevo.com"
     brevo_smtp_port: int = 587
     brevo_smtp_username: str = ""
