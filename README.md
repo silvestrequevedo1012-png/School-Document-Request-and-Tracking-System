@@ -1,10 +1,10 @@
 # School Document Request and Status Tracking System
 
-A complete FastAPI + React + SQLite application for submitting, processing, tracking, and reporting school document requests.
+A complete FastAPI + React application for submitting, processing, tracking, and reporting school document requests. Local development uses SQLite; production can use PostgreSQL on Neon.
 
 ## Structure
 
-See `backend/` and `frontend/` directories. The backend provides Google OAuth callback, JWT security, role authorization, Brevo SMTP, SQLite persistence, request workflows, and manual FIFO/search/bubble-sort demonstrations. The frontend provides all student, teacher, and administrator routes.
+See `backend/` and `frontend/` directories. The backend provides Google OAuth callback, JWT security, role authorization, Brevo SMTP, SQLite or PostgreSQL persistence, request workflows, and manual FIFO/search/bubble-sort demonstrations. The frontend provides all student, teacher, and administrator routes.
 
 ## Backend setup
 
@@ -20,6 +20,8 @@ python -m uvicorn app.main:app --reload
 ```
 
 Configure `.env` with Google OAuth and Brevo credentials. Google OAuth requires the redirect URI `http://localhost:8000/api/auth/google/callback`.
+
+For production, configure `DATABASE_URL` with your Neon PostgreSQL connection string and set production secrets and frontend CORS origins in your backend host. See [backend production setup](backend/README.md#production-database-neon).
 
 ## Frontend setup
 
