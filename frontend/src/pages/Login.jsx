@@ -40,8 +40,9 @@ export default function Login() {
   }
 
   return <main className="login-page"><section className="login-card">
-    <div className="brand-mark large">SD</div>
-    <h1>School Document Request System</h1>
+    <img className="login-logo" src="/nemsu-docs-mark.svg" alt="NEMSU Docs logo" />
+    <h1>NEMSU Docs</h1>
+    <p className="login-subtitle">Document Request and Tracking System</p>
     <p>Sign in to manage your document requests.</p>
     <a className="google-button" href={`${apiUrl}/api/auth/google`}><span className="google-g">G</span> Continue with Google</a>
     <div className="login-divider"><span>or use your email</span></div>
