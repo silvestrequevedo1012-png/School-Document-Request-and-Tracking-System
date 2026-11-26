@@ -48,6 +48,11 @@ def password_login(payload: LoginRequest, db: Session = Depends(get_db)):
 
 @router.get("/google")
 def google_login():
+    if not settings.google_client_id or not settings.google_client_secret:
+        raise HTTPException(
+            status_code=503,
+            detail="Google sign-in is not configured on the backend. Check GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET on the backend host.",
+        )
     return RedirectResponse(google_authorization_url())
 
 
