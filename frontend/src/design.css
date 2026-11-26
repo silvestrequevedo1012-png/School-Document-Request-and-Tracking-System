@@ -227,6 +227,25 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   .login-intro h2 { font-size: 29px; }
 }
 
+@media (max-width: 420px) {
+  .login-welcome { grid-template-columns: 42px minmax(0, 1fr); column-gap: 11px; min-height: 190px; padding: 21px 17px; }
+  .login-welcome-logo { width: 42px; height: 42px; }
+  .login-welcome-kicker { margin-bottom: 6px; font-size: 8px; letter-spacing: .09em; }
+  .login-welcome-copy h1 { font-size: 25px; line-height: 1.08; }
+  .login-welcome-copy > p:last-child { font-size: 11px; }
+  .login-welcome footer { font-size: 9px; }
+  .login-panel { padding: 25px 18px 34px; }
+  .login-brandline { gap: 7px; margin-bottom: 29px; font-size: 15px; }
+  .login-brandline img { width: 32px; height: 32px; }
+  .login-intro h2 { font-size: 25px; }
+  .login-intro > p { font-size: 12px; }
+  .login-intro .login-account-switch { margin-bottom: 21px; }
+  .login-split-form { gap: 14px; }
+  .login-split-form label { font-size: 11px; }
+  .login-split-form input { min-height: 45px; padding: 10px; }
+  .login-split-form .login-submit, .login-panel .google-button { min-height: 44px; padding: 10px 12px; font-size: 12px; }
+}
+
 @media (max-width: 1000px) {
   .sidebar { width: 208px; min-width: 208px; }
   .main-content { padding: 30px 24px 46px; }
