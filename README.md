@@ -4,7 +4,7 @@ A complete FastAPI + React application for submitting, processing, tracking, and
 
 ## Structure
 
-See `backend/` and `frontend/` directories. The backend provides Google OAuth callback, JWT security, role authorization, Brevo SMTP, SQLite or PostgreSQL persistence, request workflows, and manual FIFO/search/bubble-sort demonstrations. The frontend provides all student, teacher, and administrator routes.
+See `backend/` and `frontend/` directories. The backend provides Google OAuth callback, JWT security, role authorization, Mailjet-primary/Brevo-fallback SMTP delivery, SQLite or PostgreSQL persistence, request workflows, and manual FIFO/search/bubble-sort demonstrations. The frontend provides all student, teacher, and administrator routes.
 
 ## Backend setup
 
@@ -19,7 +19,7 @@ uvicorn app.main:app --reload
 python -m uvicorn app.main:app --reload
 ```
 
-Configure `.env` with Google OAuth and Brevo credentials. Google OAuth requires the redirect URI `http://localhost:8000/api/auth/google/callback`.
+Configure `.env` with Google OAuth, Mailjet, and Brevo credentials. Mailjet is tried first and Brevo is used if Mailjet is unavailable or fails. Google OAuth requires the redirect URI `http://localhost:8000/api/auth/google/callback`.
 
 For production, configure `DATABASE_URL` with your Neon PostgreSQL connection string and set production secrets and frontend CORS origins in your backend host. See [backend production setup](backend/README.md#production-database-neon).
 
@@ -38,9 +38,9 @@ Open `http://localhost:5173`. API documentation is available at `http://localhos
 
 Create a Google OAuth web credential, enable the Google OAuth/OpenID scopes, and add `http://localhost:8000/api/auth/google/callback` as an authorized redirect URI.
 
-## Brevo SMTP
+## Email delivery
 
-Create a Brevo SMTP account and use the SMTP relay, SMTP login, SMTP key, sender address, and `587` in `.env`. Gmail SMTP is not used.
+Configure both providers in `.env` for failover. Mailjet uses `in-v3.mailjet.com:587`, your Mailjet API key as `MAILJET_SMTP_USERNAME`, and its secret key as `MAILJET_SMTP_PASSWORD`. Set `MAILJET_FROM_EMAIL` to a sender verified in Mailjet. Brevo uses `smtp-relay.brevo.com:587`, its SMTP login and SMTP key, and `BREVO_FROM_EMAIL` as a sender verified in Brevo. Gmail SMTP is not used.
 
 ## Testing
 

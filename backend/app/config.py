@@ -11,6 +11,11 @@ class Settings(BaseSettings):
     google_redirect_uri: str = "http://localhost:8000/api/auth/google/callback"
     google_allowed_domain: str = ""
     google_allow_personal_gmail: bool = True
+    mailjet_smtp_host: str = "in-v3.mailjet.com"
+    mailjet_smtp_port: int = 587
+    mailjet_smtp_username: str = ""
+    mailjet_smtp_password: str = ""
+    mailjet_from_email: str = ""
     brevo_smtp_host: str = "smtp-relay.brevo.com"
     brevo_smtp_port: int = 587
     brevo_smtp_username: str = ""

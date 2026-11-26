@@ -7,6 +7,20 @@ from ..config import settings
 from ..models.email_log import EmailLog
 
 
+def _send_via_smtp(host, port, username, password, from_email, recipient, subject, html):
+    message = EmailMessage()
+    message["Subject"] = subject
+    message["From"] = f"{settings.brevo_from_name} <{from_email}>"
+    message["To"] = recipient
+    message.set_content("Please view this email in an HTML-capable email client.")
+    message.add_alternative(html, subtype="html")
+    with smtplib.SMTP(host, port, timeout=20) as smtp:
+        smtp.ehlo()
+        smtp.starttls()
+        smtp.login(username, password)
+        smtp.send_message(message)
+
+
 def _send(db: Session, recipient: str, subject: str, html: str, email_type: str, request=None, user=None):
     subject = subject
     log = EmailLog(
@@ -19,31 +33,54 @@ def _send(db: Session, recipient: str, subject: str, html: str, email_type: str,
     )
     db.add(log)
     db.flush()
-    if not settings.brevo_smtp_username or not settings.brevo_smtp_password or not settings.brevo_from_email:
+    providers = [
+        (
+            "Mailjet",
+            settings.mailjet_smtp_host,
+            settings.mailjet_smtp_port,
+            settings.mailjet_smtp_username,
+            settings.mailjet_smtp_password,
+            settings.mailjet_from_email,
+        ),
+        (
+            "Brevo",
+            settings.brevo_smtp_host,
+            settings.brevo_smtp_port,
+            settings.brevo_smtp_username,
+            settings.brevo_smtp_password,
+            settings.brevo_from_email,
+        ),
+    ]
+    configured_providers = []
+    errors = []
+    for provider, host, port, username, password, from_email in providers:
+        if username and password and from_email:
+            configured_providers.append((provider, host, port, username, password, from_email))
+        elif username or password or from_email:
+            errors.append(f"{provider} SMTP configuration is incomplete")
+
+    if not configured_providers:
         log.status = "Failed"
-        log.error_message = "Brevo SMTP is not configured"
+        log.error_message = "; ".join(errors) or "No SMTP providers are configured"
         db.commit()
         return False
-    message = EmailMessage()
-    message["Subject"] = subject
-    message["From"] = f"{settings.brevo_from_name} <{settings.brevo_from_email}>"
-    message["To"] = recipient
-    message.set_content("Please view this email in an HTML-capable email client.")
-    message.add_alternative(html, subtype="html")
-    try:
-        with smtplib.SMTP(settings.brevo_smtp_host, settings.brevo_smtp_port, timeout=20) as smtp:
-            smtp.ehlo()
-            smtp.starttls()
-            smtp.login(settings.brevo_smtp_username, settings.brevo_smtp_password)
-            smtp.send_message(message)
-        log.status = "Sent"
-        db.commit()
-        return True
-    except Exception as exc:
-        log.status = "Failed"
-        log.error_message = str(exc)
-        db.commit()
-        return False
+
+    for provider, host, port, username, password, from_email in configured_providers:
+        try:
+            _send_via_smtp(host, port, username, password, from_email, recipient, subject, html)
+            log.status = "Sent"
+            if errors:
+                errors.append(f"Email sent via {provider}")
+                log.error_message = "; ".join(errors)
+            db.commit()
+            return True
+        except Exception as exc:
+            errors.append(f"{provider} SMTP failed: {exc}")
+
+    log.status = "Failed"
+    log.error_message = "; ".join(errors)
+    db.commit()
+    return False
 
 
 def _html(title: str, request, status: str, explanation: str, next_step: str):
@@ -109,5 +146,5 @@ def send_test_email(db, recipient: str):
         request_id = "TEST-EMAIL"
         document_type = "System Test"
         release_date = None
-    html = _html("Brevo SMTP Test", TestRequest(), "Test", "This is a test email sent by the School Document Request System.", "No further action is required.")
-    return _send(db, recipient, "School System - Brevo SMTP Test", html, "Test")
+    html = _html("Email Delivery Test", TestRequest(), "Test", "This is a test email sent by the School Document Request System.", "No further action is required.")
+    return _send(db, recipient, "School System - Email Delivery Test", html, "Test")
