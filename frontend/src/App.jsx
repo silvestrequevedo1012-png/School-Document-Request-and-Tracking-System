@@ -29,6 +29,7 @@ export default function App() {
   const administrators = ['Administrator']
   return <Routes>
     <Route path="/login" element={<Login />} />
+    <Route path="/admin/login" element={<Login />} />
     <Route path="/complete-profile" element={protectedPage(<CompleteProfile />, undefined, true)} />
     <Route path="/dashboard" element={protectedPage(<Dashboard />, users)} />
     <Route path="/requests" element={protectedPage(<RequestHistory />, users)} />

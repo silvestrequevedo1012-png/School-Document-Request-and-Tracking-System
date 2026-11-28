@@ -6,7 +6,8 @@ import api from '../services/api'
 export default function Login() {
   const location = useLocation()
   const navigate = useNavigate()
-  const { loginWithToken, user } = useAuth()
+  const { loginWithToken, user, logout } = useAuth()
+  const adminLogin = location.pathname === '/admin/login'
   const [mode, setMode] = useState('login')
   const [fullName, setFullName] = useState('')
   const [email, setEmail] = useState('')
@@ -17,9 +18,23 @@ export default function Login() {
 
   useEffect(() => {
     const token = new URLSearchParams(location.search).get('token')
-    if (token) loginWithToken(token).then(authenticated => navigate(authenticated.profile_complete ? '/dashboard' : '/complete-profile', { replace: true })).catch(() => setError('Google sign-in failed. Please try again.'))
+    if (token) loginWithToken(token).then(authenticated => {
+      if (adminLogin && authenticated.role !== 'Administrator') {
+        logout()
+        setError('This account does not have administrator access.')
+        return
+      }
+      navigate(adminLogin ? '/admin' : authenticated.profile_complete ? '/dashboard' : '/complete-profile', { replace: true })
+    }).catch(() => setError('Google sign-in failed. Please try again.'))
   }, [location.search])
-  useEffect(() => { if (user) navigate(user.profile_complete ? '/dashboard' : '/complete-profile', { replace: true }) }, [user])
+  useEffect(() => {
+    if (!user) return
+    if (adminLogin) {
+      if (user.role === 'Administrator') navigate('/admin', { replace: true })
+      return
+    }
+    navigate(user.profile_complete ? '/dashboard' : '/complete-profile', { replace: true })
+  }, [user, adminLogin])
 
   async function handleSubmit(event) {
     event.preventDefault()
@@ -29,8 +44,12 @@ export default function Login() {
       const endpoint = mode === 'register' ? '/api/auth/register' : '/api/auth/login'
       const payload = mode === 'register' ? { full_name: fullName, email, password } : { email, password }
       const { data } = await api.post(endpoint, payload)
+      if (adminLogin && data.user.role !== 'Administrator') {
+        setError('This account does not have administrator access.')
+        return
+      }
       const authenticated = await loginWithToken(data.access_token)
-      navigate(authenticated.profile_complete ? '/dashboard' : '/complete-profile')
+      navigate(adminLogin ? '/admin' : authenticated.profile_complete ? '/dashboard' : '/complete-profile')
     } catch (err) {
       const detail = err.response?.data?.detail
       setError(Array.isArray(detail) ? detail.map(item => item.msg).join(' ') : detail || 'Could not connect. Please try again.')
@@ -55,25 +74,26 @@ export default function Login() {
         <div className="login-panel-inner">
           <div className="login-brandline"><img src="/nemsu-docs-mark.svg" alt="" /><span>NEMSU Docs</span></div>
           <div className="login-intro">
-            <h2>{mode === 'register' ? 'Create your account' : 'Welcome back!'}</h2>
-            <p>{mode === 'register' ? 'Register to start managing your document requests.' : 'Sign in to manage and track your document requests.'}</p>
+            <h2>{adminLogin ? 'Administrator sign in' : mode === 'register' ? 'Create your account' : 'Welcome back!'}</h2>
+            <p>{adminLogin ? 'Sign in to the NEMSU Docs administration dashboard.' : mode === 'register' ? 'Register to start managing your document requests.' : 'Sign in to manage and track your document requests.'}</p>
           </div>
 
           {error && <div className="alert error" role="alert">{error}</div>}
           <form className="login-form login-split-form" onSubmit={handleSubmit}>
-            {mode === 'register' && <label>Full name<input autoComplete="name" placeholder="Your full name" required minLength="2" maxLength="120" value={fullName} onChange={e => setFullName(e.target.value)} /></label>}
+            {!adminLogin && mode === 'register' && <label>Full name<input autoComplete="name" placeholder="Your full name" required minLength="2" maxLength="120" value={fullName} onChange={e => setFullName(e.target.value)} /></label>}
             <label>Email address<input type="email" autoComplete="email" placeholder="name@example.com" required maxLength="254" value={email} onChange={e => setEmail(e.target.value)} /></label>
             <label>Password<input type="password" autoComplete={mode === 'register' ? 'new-password' : 'current-password'} placeholder={mode === 'register' ? 'Create a password' : 'Enter your password'} required minLength={mode === 'register' ? 8 : 1} maxLength="128" value={password} onChange={e => setPassword(e.target.value)} />{mode === 'register' && <small>Use at least 8 characters.</small>}</label>
             <button className="primary-button login-submit" type="submit" disabled={submitting}>{submitting ? 'Please wait…' : mode === 'register' ? 'Create account' : 'Sign in with email'}</button>
           </form>
-          <div className="login-divider"><span>or continue with</span></div>
+          {!adminLogin && <><div className="login-divider"><span>or continue with</span></div>
           <a className="google-button" href={`${apiUrl}/api/auth/google`}><svg className="google-icon" viewBox="0 0 24 24" aria-hidden="true"><path fill="#4285F4" d="M23.49 12.27c0-.79-.07-1.54-.2-2.27H12v4.3h6.44a5.5 5.5 0 0 1-2.39 3.61v2.96h3.87c2.27-2.09 3.57-5.16 3.57-8.6Z"/><path fill="#34A853" d="M12 24c3.24 0 5.96-1.08 7.95-2.93l-3.87-2.96c-1.08.73-2.46 1.16-4.08 1.16-3.14 0-5.8-2.12-6.75-4.96H1.25v3.05A12 12 0 0 0 12 24Z"/><path fill="#FBBC05" d="M5.25 14.31a7.2 7.2 0 0 1 0-4.62V6.64H1.25a12 12 0 0 0 0 10.72l4-3.05Z"/><path fill="#EA4335" d="M12 4.73c1.76 0 3.34.6 4.59 1.8l3.44-3.44C17.95 1.14 15.24 0 12 0A12 12 0 0 0 1.25 6.64l4 3.05C6.2 6.85 8.86 4.73 12 4.73Z"/></svg> Continue with Google</a>
           <p className="login-account-switch">
             {mode === 'register' ? 'Already have an account?' : "Don’t have an account?"}{' '}
             <button type="button" onClick={() => { setMode(mode === 'register' ? 'login' : 'register'); setError('') }}>
               {mode === 'register' ? 'Sign in' : 'Create a new account'}
             </button>
-          </p>
+          </p></>}
+          {adminLogin && user && user.role !== 'Administrator' && <p className="login-account-switch">Signed in with a non-admin account. <button type="button" onClick={logout}>Sign out</button></p>}
         </div>
       </section>
     </section>
