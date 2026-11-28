@@ -1,18 +1,21 @@
 from datetime import date, datetime, timezone
 from types import SimpleNamespace
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from ..database import get_db
 from ..models.user import User
 from ..models.document_request import DocumentRequest
+from ..models.status_history import StatusHistory
+from ..models.notification import Notification
 from ..models.audit_log import AuditLog
 from ..models.email_log import EmailLog
 from ..schemas.request import RejectRequest, ReleaseDateUpdate
 from ..schemas.admin import TestEmailRequest, UserRoleUpdate
+from ..schemas.auth import RegisterRequest
 from ..schemas.user import UserResponse
-from ..utils.security import require_admin, require_request_staff
+from ..utils.security import hash_password, require_admin, require_request_staff
 from ..services.request_service import change_status
 from ..services.notification_service import create_notification
 from ..services.email_service import (
@@ -199,6 +202,75 @@ def users(search: str = "", role: str = "All", db: Session = Depends(get_db), ad
     if role != "All":
         query = query.filter(User.role == role)
     return query.order_by(User.created_at.desc()).all()
+
+
+@router.post("/users/registrars", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+def create_registrar(
+    payload: RegisterRequest,
+    db: Session = Depends(get_db),
+    admin: User = Depends(require_admin),
+):
+    email = str(payload.email).lower()
+    if db.query(User).filter(User.email == email).first():
+        raise HTTPException(409, "An account with this email already exists.")
+    user = User(
+        full_name=payload.full_name,
+        email=email,
+        password_hash=hash_password(payload.password),
+        role="Registrar",
+        is_active=True,
+    )
+    db.add(user)
+    db.flush()
+    audit(db, admin, None, "CREATE_REGISTRAR", f"Created registrar account {email}")
+    db.commit()
+    db.refresh(user)
+    return user
+
+
+@router.delete("/users/{user_id}")
+def delete_user(
+    user_id: int,
+    db: Session = Depends(get_db),
+    admin: User = Depends(require_admin),
+):
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(404, "User not found")
+    if user.id == admin.id:
+        raise HTTPException(400, "You cannot delete your own account")
+    if user.role == "Administrator":
+        active_admins = db.query(User).filter(User.role == "Administrator", User.is_active.is_(True)).count()
+        if active_admins <= 1:
+            raise HTTPException(400, "The last active administrator cannot be deleted")
+        if db.query(AuditLog).filter(AuditLog.admin_id == user.id).first():
+            raise HTTPException(400, "This administrator has audit history and cannot be deleted")
+
+    request_ids = [row.id for row in db.query(DocumentRequest.id).filter(DocumentRequest.user_id == user.id).all()]
+    if request_ids:
+        db.query(AuditLog).filter(AuditLog.request_id.in_(request_ids)).update(
+            {AuditLog.request_id: None}, synchronize_session=False
+        )
+        db.query(StatusHistory).filter(StatusHistory.request_id.in_(request_ids)).delete(synchronize_session=False)
+        db.query(Notification).filter(Notification.request_id.in_(request_ids)).delete(synchronize_session=False)
+        db.query(EmailLog).filter(EmailLog.request_id.in_(request_ids)).delete(synchronize_session=False)
+        db.query(DocumentRequest).filter(DocumentRequest.id.in_(request_ids)).delete(synchronize_session=False)
+
+    db.query(StatusHistory).filter(StatusHistory.changed_by == user.id).update(
+        {StatusHistory.changed_by: None}, synchronize_session=False
+    )
+    db.query(DocumentRequest).filter(DocumentRequest.cancelled_by == user.id).update(
+        {DocumentRequest.cancelled_by: None}, synchronize_session=False
+    )
+    db.query(DocumentRequest).filter(DocumentRequest.rejected_by == user.id).update(
+        {DocumentRequest.rejected_by: None}, synchronize_session=False
+    )
+    db.query(Notification).filter(Notification.user_id == user.id).delete(synchronize_session=False)
+    db.query(EmailLog).filter(EmailLog.user_id == user.id).delete(synchronize_session=False)
+    audit(db, admin, None, "DELETE_USER", f"Deleted {user.role.lower()} account {user.email}")
+    db.delete(user)
+    db.commit()
+    return {"detail": "Account deleted"}
 
 
 @router.patch("/users/{user_id}/role", response_model=UserResponse)
