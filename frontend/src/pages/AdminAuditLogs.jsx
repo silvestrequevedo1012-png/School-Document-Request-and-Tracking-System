@@ -41,9 +41,9 @@ export default function AdminAuditLogs() {
       {loading ? <LoadingSpinner /> : <>
         <div className="table-wrap"><table><thead><tr><th>Staff ID</th><th>Request ID</th><th>Action</th><th>Description</th><th>Date/Time</th></tr></thead><tbody>
           {data.items.map(item => <tr key={item.id}>
-            <td>{item.admin_id}</td><td>{item.request_id || '—'}</td>
-            <td><span className="audit-action">{String(item.action || 'Unknown').replaceAll('_', ' ')}</span></td>
-            <td>{item.description || '—'}</td><td>{item.created_at ? new Date(item.created_at).toLocaleString() : '—'}</td>
+            <td data-label="Staff ID">{item.admin_id}</td><td data-label="Request ID">{item.request_id || '—'}</td>
+            <td data-label="Action"><span className="audit-action">{String(item.action || 'Unknown').replaceAll('_', ' ')}</span></td>
+            <td data-label="Description">{item.description || '—'}</td><td data-label="Date/Time">{item.created_at ? new Date(item.created_at).toLocaleString() : '—'}</td>
           </tr>)}
         </tbody></table>{!data.items.length && <div className="empty-state">No audit events match these filters.</div>}</div>
         <Pagination page={page} pages={data.pages} onPage={setPage} />

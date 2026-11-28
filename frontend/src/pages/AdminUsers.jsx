@@ -82,12 +82,12 @@ export default function AdminUsers() {
       {message && <div className="alert" role="status">{message}</div>}
       <div className="table-wrap"><table><thead><tr><th>Name</th><th>Email</th><th>System Role</th><th>User Type</th><th>Account Status</th><th>Created</th><th>Last Login</th><th>Action</th></tr></thead><tbody>
         {users.map(u => <tr key={u.id}>
-          <td>{u.full_name}</td><td>{u.email}</td>
-          <td><select value={u.role} disabled={u.id === currentUser?.id || updatingUserId === u.id} onChange={event => updateRole(u.id, event.target.value)} aria-label={`System role for ${u.full_name}`}><option value="User">User</option><option value="Registrar">Registrar</option><option value="Administrator">Administrator</option></select></td>
-          <td>{u.member_type || '—'}</td>
-          <td><span className={`account-state ${u.is_active ? 'active' : 'inactive'}`}>{u.is_active ? 'Active' : 'Inactive'}</span></td>
-          <td>{new Date(u.created_at).toLocaleDateString()}</td><td>{u.last_login ? new Date(u.last_login).toLocaleString() : '—'}</td>
-          <td>{u.id !== currentUser?.id && <button className="danger-button" onClick={() => deleteUser(u)}>Delete</button>}</td>
+          <td data-label="Name">{u.full_name}</td><td data-label="Email">{u.email}</td>
+          <td data-label="System Role"><select value={u.role} disabled={u.id === currentUser?.id || updatingUserId === u.id} onChange={event => updateRole(u.id, event.target.value)} aria-label={`System role for ${u.full_name}`}><option value="User">User</option><option value="Registrar">Registrar</option><option value="Administrator">Administrator</option></select></td>
+          <td data-label="User Type">{u.member_type || '—'}</td>
+          <td data-label="Account Status"><span className={`account-state ${u.is_active ? 'active' : 'inactive'}`}>{u.is_active ? 'Active' : 'Inactive'}</span></td>
+          <td data-label="Created">{new Date(u.created_at).toLocaleDateString()}</td><td data-label="Last Login">{u.last_login ? new Date(u.last_login).toLocaleString() : '—'}</td>
+          <td data-label="Action">{u.id !== currentUser?.id && <button className="danger-button" onClick={() => deleteUser(u)}>Delete</button>}</td>
         </tr>)}
       </tbody></table>{!users.length && <div className="empty-state">No matching accounts found.</div>}</div>
     </section>
